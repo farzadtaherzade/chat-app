@@ -1,6 +1,5 @@
 require("dotenv").config();
-
-const { createClient } = require("redis");
+const Redis = require("ioredis");
 const express = require("express");
 
 const app = express();
@@ -12,18 +11,14 @@ app.set("view engine", "ejs");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-let currentRoom;
 const users = [];
+const client = new Redis(process.env.REDIS_URL);
 
 const server = createServer(app);
 app.get("/", async (req, res, next) => {
   const { username } = req.query;
   if (!username) return res.redirect("/login");
-  const client = await createClient({ url: process.env.REDIS_URL })
-    .on("error", (err) => console.log("Redis Client Error", err))
-    .connect();
-  await client.set("username", username);
-  const value = await client.get("username");
+
   const context = {
     username,
   };
@@ -31,6 +26,7 @@ app.get("/", async (req, res, next) => {
 });
 
 app.get("/login", (req, res, next) => {
+  console.log(process.env.REDIS_URL);
   res.render("login");
 });
 
@@ -45,14 +41,9 @@ const io = new Server(server, {
 });
 
 const sendAllMessages = async ({ socket }) => {
-  const client = await createClient({ url: process.env.REDIS_URL })
-    .on("error", (err) => console.log("Redis Client Error", err))
-    .connect();
-
-  let messages = await client.lRange("messages", 0, -1);
+  let messages = await client.lrange("messages", 0, -1);
   messages.reverse();
-  let rooms = socket.rooms;
-  rooms = Array.from(rooms);
+  let rooms = Array.from(socket.rooms);
   let alreadyPrintFromRooms = 0;
 
   for (let i = 0; i < messages.length; i++) {
@@ -80,16 +71,13 @@ io.on("connection", async (socket) => {
   });
   await sendAllMessages({ socket });
   socket.on("message", async (message, room, username) => {
-    const client = await createClient({ url: process.env.REDIS_URL })
-      .on("error", (err) => console.log("Redis Client Error", err))
-      .connect();
     if (room) {
       io.sockets.to(room).emit("serveMessages", message, username);
     } else {
       io.sockets.emit("serveMessages", message, username);
       room = undefined;
     }
-    await client.lPush("messages", `${username}#${message}#${room}`);
+    await client.rpush("messages", `${username}#${message}#${room}`);
   });
   socket.on("join-room", async (room, cb) => {
     socket.join(room);
