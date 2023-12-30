@@ -19,7 +19,7 @@ const server = createServer(app);
 app.get("/", async (req, res, next) => {
   const { username } = req.query;
   if (!username) return res.redirect("/login");
-  const client = await createClient()
+  const client = await createClient({ url: process.env.REDIS_URL })
     .on("error", (err) => console.log("Redis Client Error", err))
     .connect();
   await client.set("username", username);
