@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const { createClient } = require("redis");
 const express = require("express");
 
@@ -43,7 +45,7 @@ const io = new Server(server, {
 });
 
 const sendAllMessages = async ({ socket }) => {
-  const client = await createClient()
+  const client = await createClient({ url: process.env.REDIS_URL })
     .on("error", (err) => console.log("Redis Client Error", err))
     .connect();
 
@@ -78,7 +80,7 @@ io.on("connection", async (socket) => {
   });
   await sendAllMessages({ socket });
   socket.on("message", async (message, room, username) => {
-    const client = await createClient()
+    const client = await createClient({ url: process.env.REDIS_URL })
       .on("error", (err) => console.log("Redis Client Error", err))
       .connect();
     if (room) {
