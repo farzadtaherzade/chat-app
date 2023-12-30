@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        #chat-box::-webkit-scrollbar {
+            width: 12px;
+            /* width of the scrollbar */
+        }
+
+        #chat-box::-webkit-scrollbar-track {
+            background: #333;
+            /* Color of the track */
+        }
+
+        #chat-box::-webkit-scrollbar-thumb {
+            background-image: linear-gradient(to bottom, #4F4F4F, #333);
+            /* Gradient color for the thumb */
+            border-radius: 6px;
+            /* Round the corners of the thumb */
+        }
+    </style>
+
+</head>
+
+<body class="bg-gray-800 text-white">
+    <div class="container mx-auto">
+        <div class="flex gap-6 h-screen py-10">
+            <div class="w-3/12">
+                <div class=" sticky top-0 self-start bg-gray-600 rounded-lg py-5">
+                    <div class="flex justify-between items-center px-5">
+                        <h1 class="text-white font-bold">
+                            <%= username %>
+                        </h1>
+                        <div class="">
+                            <?xml version="1.0" encoding="utf-8"?>
+                            <svg width="30px" height="30px" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M15 12L12 12M12 12L9 12M12 12L12 9M12 12L12 15" stroke="#fff"
+                                    stroke-width="1.5" stroke-linecap="round" />
+                                <path
+                                    d="M22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C21.5093 4.43821 21.8356 5.80655 21.9449 8"
+                                    stroke="#fff" stroke-width="1.5" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="flex flex-col mt-5 gap-y-5">
+                        <div id="room" class="flex w-full gap-x-3 items-center hover:bg-neutral-500 cursor-pointer duration-200
+                                py-2 rounded-lg p-5">
+                            <div
+                                class=" w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 text-white">
+                                <span>
+                                    TS
+                                </span>
+                            </div>
+                            <span>
+                                TypeScript
+                            </span>
+                        </div>
+
+                        <div id="room" class="flex w-full gap-x-3 items-center hover:bg-neutral-500 cursor-pointer duration-200
+                                py-2 rounded-lg p-5">
+                            <div
+                                class=" w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 text-white">
+                                <span>
+                                    TS
+                                </span>
+                            </div>
+                            <span>
+                                Test
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="w-9/12">
+                <div class="flex gap-x-5">
+                    <input id="text" type="text"
+                        class="w-full py-3 sticky border border-gray-700 rounded-lg px-3 bg-gray-700 focus:outline-none focus:border-indigo-500 hover:shadow text-white"
+                        placeholder="Enter your message">
+
+                    <button id="sendBtn"
+                        class="bg-gray-700 border border-gray-700 text-white py-3 px-4 rounded-lg focus:outline-none hover:shadow hover:bg-gray-800 transition-colors duration-300 cursor-pointer">Send</button>
+                </div>
+                <div id="chat-box"
+                    class="p-4 h-full w-full my-3 max-h-[80vh] bg-gray-800 rounded-lg shadow-md flex flex-col overflow-y-scroll">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const $ = document;
+        const sendBtn = $.querySelector("#sendBtn");
+        const client = io("http://localhost:3000");
+        const $joinRoomBtn = $.querySelectorAll("#room")
+        const $chatBox = $.querySelector('#chat-box')
+        let currentRoom;
+        const username = "<%= username %>"
+
+        client.on("connect", (data) => {
+            client.emit("login", username)
+            sendBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                const text = $.querySelector("#text"); // Ensure this ID corresponds to the input ID
+                const message = text.value;
+                if (!message) return
+                client.emit("message", message, currentRoom, username);
+                text.value = "";
+            });
+            client.on("serveMessages", (message, RoomUsername) => {
+                displayMessage({ message, RoomUsername })
+            })
+        });
+
+        $joinRoomBtn.forEach(room => {
+            room.addEventListener("click", (e) => {
+                const newRoom = room.children[1].textContent.trim()
+                if (newRoom !== currentRoom) {
+                    client.emit("join-room", newRoom, (message) => {
+                        displayMessage({ message, RoomUsername: username, className: "w-full" })
+                    })
+                    client.emit("leave-room", currentRoom)
+                    currentRoom = newRoom
+                }
+            })
+        })
+
+        function displayMessage({ message, RoomUsername, className = 'w-32' }) {
+            const topParagraph = $.createElement('p')
+            const paragraph = $.createElement('p')
+            topParagraph.className = "text-gray-100 block"
+            paragraph.className = "text-gray-100 block"
+            const divElem = $.createElement('div')
+            divElem.className = 'shadow-md rounded-lg p-3 mb-2 flex flex-col justify-between'
+            console.log(RoomUsername === "farzad", RoomUsername)
+            if (username == RoomUsername) {
+                console.log(username)
+                divElem.className = divElem.className + " " + "ml-auto bg-red-700"
+            } else {
+                divElem.className = divElem.className + " " + "bg-slate-600"
+
+            }
+            divElem.appendChild(topParagraph)
+            divElem.appendChild(paragraph)
+            divElem.className = divElem.className + " " + className
+            topParagraph.textContent = RoomUsername
+            paragraph.textContent = message
+            $chatBox.appendChild(divElem)
+        }
+    </script>
+</body>
+
+</html>
