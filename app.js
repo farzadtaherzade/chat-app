@@ -90,5 +90,5 @@ io.on("connection", async (socket) => {
 });
 
 server.listen(3000, () =>
-  console.log("server running at http://localhost:3000")
+  console.log(`server running at ${process.env.SOCKET_URL}`)
 );

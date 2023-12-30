@@ -97,7 +97,7 @@
     <script>
         const $ = document;
         const sendBtn = $.querySelector("#sendBtn");
-        const client = io("http://localhost:3000");
+        const client = io('<%= process.env.SOCKET_URL %>');
         const $joinRoomBtn = $.querySelectorAll("#room")
         const $chatBox = $.querySelector('#chat-box')
         let currentRoom;
