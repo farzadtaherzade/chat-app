@@ -42,7 +42,6 @@ const io = new Server(server, {
 
 const sendAllMessages = async ({ socket }) => {
   let messages = await client.lrange("messages", 0, -1);
-  messages.reverse();
   let rooms = Array.from(socket.rooms);
   let alreadyPrintFromRooms = 0;
 
