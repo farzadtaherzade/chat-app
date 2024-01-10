@@ -47,18 +47,15 @@ const sendAllMessages = async ({ socket }) => {
 
   for (let i = 0; i < messages.length; i++) {
     let [username, message, room] = messages[i].split("#");
-    room = String(room);
+    room = room;
     if (rooms.includes(room)) {
-      socket.to(rooms[0]).emit("serveMessages", message, username);
+      console.log(room);
+      io.sockets.to(room).emit("serveMessages", message, username);
       alreadyPrintFromRooms++;
     } else if (room == "undefined") {
       if (alreadyPrintFromRooms <= 0 && rooms.length !== 2) {
         socket.emit("serveMessages", message, username);
       }
-    }
-
-    if (i == messages.length) {
-      alreadyPrintFromRooms = 0;
     }
   }
 };
